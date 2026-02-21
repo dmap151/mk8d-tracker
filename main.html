@@ -61,13 +61,43 @@
             margin-bottom: 10px;
         }
 
-        .player-manager-list label {
-            display: block;
+        /* NEU: Flex-Layout für die Spieler-Items (inklusive Löschen-Button) */
+        .player-manager-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 8px;
+            background: #f9f9f9;
+            padding: 4px 8px;
+            border-radius: 5px;
+        }
+
+        .player-manager-item label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin: 0;
             font-size: 0.95rem;
             cursor: pointer;
             font-weight: bold;
             color: #444;
+            flex: 1;
+        }
+
+        /* NEU: Styling für den Löschen-Button in der Spielerliste */
+        .btn-delete-player {
+            background-color: #ff4d4d;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            transition: background-color 0.2s;
+        }
+
+        .btn-delete-player:hover {
+            background-color: #cc0000;
         }
 
         .player-manager-add {
@@ -323,10 +353,13 @@
             container.innerHTML = '';
             players.forEach(p => {
                 container.innerHTML += `
-                    <label>
-                        <input type="checkbox" ${p.visible ? 'checked' : ''} onchange="togglePlayerVisibility('${p.id}')">
-                        ${p.name}
-                    </label>
+                    <div class="player-manager-item">
+                        <label>
+                            <input type="checkbox" ${p.visible ? 'checked' : ''} onchange="togglePlayerVisibility('${p.id}')">
+                            ${p.name}
+                        </label>
+                        <button class="btn-delete-player" onclick="deletePlayer('${p.id}')" title="Spieler löschen">✖</button>
+                    </div>
                 `;
             });
         }
@@ -349,6 +382,19 @@
                 savePlayers();
                 renderPlayersManager();
                 renderPlayedTracks();
+            }
+        }
+
+        // NEU: Funktion zum Löschen eines Spielers
+        function deletePlayer(id) {
+            const player = players.find(x => x.id === id);
+            if (player) {
+                if (confirm(`Bist du dir sicher, dass du "${player.name}" löschen möchtest?`)) {
+                    players = players.filter(x => x.id !== id);
+                    savePlayers();
+                    renderPlayersManager();
+                    renderPlayedTracks();
+                }
             }
         }
 
@@ -438,7 +484,6 @@
             renderPlayedTracks();
         }
 
-        // NEU: renderPlayedTracks liest jetzt direkt das Suchfeld aus!
         function renderPlayedTracks() {
             const list = document.getElementById('playedTracksList');
             list.innerHTML = "";
@@ -450,7 +495,6 @@
             }
 
             if (currentView === 'history') {
-                // NEU: Wir mappen erst den echten Index und filtern dann den Verlauf
                 const filteredHistory = playedTracksData
                     .map((item, index) => ({ item: item, originalIndex: index }))
                     .filter(({item}) => {
@@ -503,7 +547,6 @@
                     list.appendChild(li);
                 });
                 
-                // Nur runterscrollen, wenn man nicht gerade aktiv am Suchen ist
                 if (searchTerm === "") {
                     list.scrollTop = list.scrollHeight;
                 }
@@ -518,7 +561,6 @@
 
                 const sortedStats = Object.entries(stats).sort((a, b) => b[1] - a[1]);
 
-                // NEU: Filtert die Statistik-Ansicht nach der Eingabe
                 const filteredStats = sortedStats.filter(([trackName, count]) => {
                     const matchOriginal = trackName.toLowerCase().includes(searchTerm);
                     const matchSynonym = trackSynonyms[trackName] && trackSynonyms[trackName].toLowerCase().includes(searchTerm);
@@ -553,7 +595,6 @@
             playedTracksData.push({ id: uniqueId, name: trackName, date: currentTime, placements: {} });
             saveData();
             
-            // Löscht die Suchleiste automatisch, wenn eine neue Strecke hinzugefügt wird, damit man sie direkt sieht
             document.getElementById('searchInput').value = "";
             filterTracks();
         }
@@ -568,7 +609,6 @@
             localStorage.setItem('mk8d_history_log', JSON.stringify(playedTracksData));
         }
 
-        // NEU: Aktualisiert nun linke UND rechte Spalte gleichzeitig
         function filterTracks() {
             renderAllTracks(document.getElementById('searchInput').value);
             renderPlayedTracks();
