@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mario Kart 8 Deluxe - Strecken Tracker</title>
+    <style>
+        :root {
+            --primary: #e60012;
+            --bg-color: #f4f4f9;
+            --text-color: #333;
+            --card-bg: #fff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .player-panel-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+        }
+
+        .btn-players {
+            background-color: #3f51b5;
+            font-size: 0.95rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .player-panel {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            margin-top: 10px;
+            width: 250px;
+            border: 1px solid #ddd;
+        }
+
+        .player-panel.hidden {
+            display: none;
+        }
+
+        .player-panel h3 {
+            margin-top: 0;
+            font-size: 1.1rem;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 5px;
+        }
+
+        .player-manager-list {
+            max-height: 150px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+
+        .player-manager-list label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            font-weight: bold;
+            color: #444;
+        }
+
+        .player-manager-add {
+            display: flex;
+            gap: 5px;
+        }
+
+        .player-manager-add input {
+            flex: 1;
+            padding: 5px 10px;
+            font-size: 0.9rem;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        @media (max-width: 800px) {
+            .player-panel-container {
+                position: static;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                margin-bottom: 20px;
+            }
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-top: 10px;
+        }
+
+        .search-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        input[type="text"].search-input {
+            padding: 12px 20px;
+            width: 100%;
+            max-width: 400px;
+            font-size: 16px;
+            border: 2px solid #ccc;
+            border-radius: 25px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        input[type="text"].search-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 10px rgba(230, 0, 18, 0.2);
+        }
+
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .column {
+            flex: 1;
+            min-width: 350px;
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.05);
+            max-height: 75vh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid var(--primary);
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        h2 { margin: 0; font-size: 1.3rem; }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        li.history-li {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .history-li-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .placements-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed #ddd;
+        }
+
+        .player-select {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #f8f9fa;
+            padding: 4px 10px;
+            border-radius: 20px;
+            border: 1px solid #e0e0e0;
+            font-size: 0.85rem;
+        }
+
+        .player-name-label {
+            font-weight: bold;
+            color: #555;
+        }
+
+        .player-select select {
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            background: white;
+            padding: 2px 4px;
+            outline: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .track-thumb { width: 80px; height: 45px; border-radius: 6px; margin-right: 15px; object-fit: cover; background-color: #ddd; }
+        .track-info { display: flex; align-items: center; flex: 1; }
+        .track-name { font-weight: 600; font-size: 0.95rem; margin-right: 10px; }
+        .race-number { font-weight: bold; color: #888; margin-right: 15px; min-width: 25px; }
+        .track-time { font-size: 0.8rem; color: #888; text-align: right; }
+        .track-count { background-color: #ffd700; color: #000; padding: 4px 10px; border-radius: 10px; font-weight: 800; margin-right: 8px; font-size: 0.85rem; }
+        .track-percent { background-color: #e0e0e0; color: #555; padding: 4px 8px; border-radius: 8px; font-weight: 700; margin-right: 12px; font-size: 0.75rem; }
+
+        button { background-color: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-weight: bold; transition: opacity 0.2s; }
+        button:hover { opacity: 0.8; }
+        .btn-toggle { background-color: #00b0ff; font-size: 0.9rem; padding: 6px 12px; }
+        .btn-synonym { background-color: #9c27b0; font-size: 1rem; padding: 10px 20px; border-radius: 25px; }
+        .btn-remove { background-color: #666; font-size: 12px; padding: 5px 10px; }
+        .btn-export { background-color: #4CAF50; font-size: 0.85rem; padding: 6px 12px; }
+        .btn-import { background-color: #ff9800; font-size: 0.85rem; padding: 6px 12px; }
+        
+        .btn-edit-name { background: none; border: none; color: #888; cursor: pointer; font-size: 1.1rem; padding: 0 5px; transition: transform 0.2s; }
+        .btn-edit-name:hover { transform: scale(1.2); color: var(--primary); background: none; opacity: 1; }
+
+    </style>
+</head>
+
+<body>
+
+    <div class="player-panel-container">
+        <button class="btn-players" onclick="togglePlayerPanel()">👥 Spieler verwalten</button>
+        <div id="playerPanel" class="player-panel hidden">
+            <h3>Aktive Spieler</h3>
+            <div class="player-manager-list" id="playerListContainer"></div>
+            <div class="player-manager-add">
+                <input type="text" id="newPlayerName" placeholder="Neuer Spieler..." onkeypress="if(event.key==='Enter') addPlayer()">
+                <button onclick="addPlayer()">+</button>
+            </div>
+        </div>
+    </div>
+
+    <h1>Mario Kart 8 Deluxe Tracker</h1>
+
+    <div class="search-container">
+        <input type="text" id="searchInput" class="search-input" placeholder="Suche nach einer Strecke (Original oder Synonym)..." onkeyup="filterTracks()">
+        <button id="btnToggleNames" class="btn-synonym" onclick="toggleNames()">🏷️ Zeige Synonyme</button>
+    </div>
+
+    <div class="container">
+        <div class="column">
+            <div class="header-container">
+                <h2>Alle Strecken</h2>
+            </div>
+            <ul id="allTracksList"></ul>
+        </div>
+
+        <div class="column">
+            <div class="header-container">
+                <h2 id="rightColumnTitle">Verlauf (Chronologisch)</h2>
+                <button class="btn-toggle" onclick="toggleView()">📊 Ansicht wechseln</button>
+            </div>
+            
+            <div class="action-buttons">
+                <button class="btn-export" onclick="exportJSON()">📤 Export JSON</button>
+                <button class="btn-import" onclick="document.getElementById('fileInput').click()">📥 Import JSON</button>
+                <input type="file" id="fileInput" style="display: none;" accept=".json" onchange="importJSON(event)">
+            </div>
+
+            <ul id="playedTracksList"></ul>
+        </div>
+    </div>
+
+    <script>
+        const allTracks = [
+            "Mario Kart Stadium", "Water Park", "Sweet Sweet Canyon", "Thwomp Ruins", "Mario Circuit", "Toad Harbor", "Twisted Mansion", "Shy Guy Falls", "Sunshine Airport", "Dolphin Shoals", "Electrodrome", "Mount Wario", "Cloudtop Cruise", "Bone-Dry Dunes", "Bowser's Castle", "Rainbow Road", "Wii Moo Moo Meadows", "GBA Mario Circuit", "DS Cheep Cheep Beach", "N64 Toad's Turnpike", "GCN Dry Dry Desert", "SNES Donut Plains 3", "N64 Royal Raceway", "3DS DK Jungle", "DS Wario Stadium", "GCN Sherbet Land", "3DS Music Park", "N64 Yoshi Valley", "DS Tick-Tock Clock", "3DS Piranha Plant Slide", "Wii Grumble Volcano", "N64 Rainbow Road", "GCN Yoshi Circuit", "Excitebike Arena", "Dragon Driftway", "Mute City", "Wii Wario's Gold Mine", "SNES Rainbow Road", "Ice Ice Outpost", "Hyrule Circuit", "GCN Baby Park", "GBA Cheese Land", "Wild Woods", "Animal Crossing", "3DS Neo Bowser City", "GBA Ribbon Road", "Super Bell Subway", "Big Blue", "Tour Paris Promenade", "3DS Toad Circuit", "N64 Choco Mountain", "Wii Coconut Mall", "Tour Tokyo Blur", "DS Shroom Ridge", "GBA Sky Garden", "Ninja Hideaway", "Tour New York Minute", "SNES Mario Circuit 3", "N64 Kalimari Desert", "DS Waluigi Pinball", "Tour Sydney Sprint", "GBA Snow Land", "Wii Mushroom Gorge", "Sky-High Sundae", "Tour London Loop", "GBA Boo Lake", "3DS Rock Rock Mountain", "Wii Maple Treeway", "Berlin Byways", "DS Peach Gardens", "Merry Mountain", "3DS Rainbow Road", "Tour Amsterdam Drift", "GBA Riverside Park", "Wii DK Summit", "Yoshi’s Island", "Tour Bangkok Rush", "DS Mario Circuit", "GCN Waluigi Stadium", "Tour Singapore Speedway", "Tour Athens Dash", "GCN Daisy Cruiser", "Wii Moonview Highway", "Squeaky Clean Sprint", "Tour Los Angeles Laps", "GBA Sunset Wilds", "Wii Koopa Cape", "Tour Vancouver Velocity", "Tour Rome Avanti", "GCN DK Mountain", "Wii Daisy Circuit", "Piranha Plant Cove", "Tour Madrid Drive", "3DS Rosalina’s Ice World", "SNES Bowser Castle 3", "Wii Rainbow Road"
+        ];
+
+        let playedTracksData = JSON.parse(localStorage.getItem('mk8d_history_log')) || [];
+        let trackSynonyms = JSON.parse(localStorage.getItem('mk8d_synonyms')) || {}; 
+        let players = JSON.parse(localStorage.getItem('mk8d_players')) || [
+            { id: 'p1', name: 'Spieler 1', visible: true }
+        ];
+        
+        let currentView = 'history';
+        let showSynonyms = false;
+
+        function togglePlayerPanel() {
+            document.getElementById('playerPanel').classList.toggle('hidden');
+        }
+
+        function savePlayers() {
+            localStorage.setItem('mk8d_players', JSON.stringify(players));
+        }
+
+        function renderPlayersManager() {
+            const container = document.getElementById('playerListContainer');
+            container.innerHTML = '';
+            players.forEach(p => {
+                container.innerHTML += `
+                    <label>
+                        <input type="checkbox" ${p.visible ? 'checked' : ''} onchange="togglePlayerVisibility('${p.id}')">
+                        ${p.name}
+                    </label>
+                `;
+            });
+        }
+
+        function togglePlayerVisibility(id) {
+            const p = players.find(x => x.id === id);
+            if(p) {
+                p.visible = !p.visible;
+                savePlayers();
+                renderPlayedTracks();
+            }
+        }
+
+        function addPlayer() {
+            const nameInput = document.getElementById('newPlayerName');
+            const name = nameInput.value.trim();
+            if(name) {
+                players.push({ id: 'p' + Date.now(), name: name, visible: true });
+                nameInput.value = '';
+                savePlayers();
+                renderPlayersManager();
+                renderPlayedTracks();
+            }
+        }
+
+        function updatePlacement(raceId, playerId, value) {
+            const race = playedTracksData.find(r => r.id === raceId);
+            if (race) {
+                if (!race.placements) race.placements = {};
+                race.placements[playerId] = value;
+                saveData();
+            }
+        }
+
+        function getThumbUrl(trackName) {
+            let formattedName = trackName.replace(/’/g, "'");
+            formattedName = formattedName.replace(/ /g, "_");
+            return `img/184px-MK8D_${formattedName}_Course_Icon_Full.png`;
+        }
+
+        function getFallbackImg() {
+            return "this.onerror=null; this.src='https://placehold.co/160x90/e60012/white?text=Fehlt';";
+        }
+
+        function getDisplayName(trackName) {
+            if (showSynonyms && trackSynonyms[trackName]) {
+                return trackSynonyms[trackName];
+            }
+            return trackName;
+        }
+
+        function formatDateTime(isoString) {
+            if (!isoString) return "";
+            const date = new Date(isoString);
+            return date.toLocaleDateString('de-DE') + ", " + date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) + " Uhr";
+        }
+
+        function toggleNames() {
+            showSynonyms = !showSynonyms;
+            const btn = document.getElementById('btnToggleNames');
+            btn.textContent = showSynonyms ? "🏷️ Zeige Originalnamen" : "🏷️ Zeige Synonyme";
+            filterTracks();
+        }
+
+        function editSynonym(trackName) {
+            const currentName = trackSynonyms[trackName] || "";
+            const newName = prompt(`Gib einen eigenen Namen/Spitznamen für "${trackName}" ein:\n(Lass das Feld leer, um ihn zu löschen)`, currentName);
+            
+            if (newName !== null) {
+                if (newName.trim() === "") {
+                    delete trackSynonyms[trackName];
+                } else {
+                    trackSynonyms[trackName] = newName.trim();
+                }
+                localStorage.setItem('mk8d_synonyms', JSON.stringify(trackSynonyms));
+                filterTracks();
+            }
+        }
+
+        function renderAllTracks(filter = "") {
+            const list = document.getElementById('allTracksList');
+            list.innerHTML = "";
+            const searchTerm = filter.toLowerCase();
+
+            const filteredTracks = allTracks.filter(track => {
+                const matchOriginal = track.toLowerCase().includes(searchTerm);
+                const matchSynonym = trackSynonyms[track] && trackSynonyms[track].toLowerCase().includes(searchTerm);
+                return matchOriginal || matchSynonym;
+            });
+
+            filteredTracks.forEach(track => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <div class="track-info">
+                        <img class="track-thumb" src="${getThumbUrl(track)}" onerror="${getFallbackImg()}">
+                        <span class="track-name">${getDisplayName(track)}</span>
+                        <button class="btn-edit-name" onclick="editSynonym('${track.replace(/'/g, "\\'")}')" title="Synonym bearbeiten">✏️</button>
+                    </div>
+                    <button onclick="addPlayedTrack('${track.replace(/'/g, "\\'")}')">+ Hinzufügen</button>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        function toggleView() {
+            currentView = (currentView === 'history') ? 'stats' : 'history';
+            const title = document.getElementById('rightColumnTitle');
+            title.textContent = (currentView === 'history') ? "Verlauf (Chronologisch)" : "Top-Strecken (Statistik)";
+            renderPlayedTracks();
+        }
+
+        // NEU: renderPlayedTracks liest jetzt direkt das Suchfeld aus!
+        function renderPlayedTracks() {
+            const list = document.getElementById('playedTracksList');
+            list.innerHTML = "";
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+
+            if (playedTracksData.length === 0) {
+                list.innerHTML = "<li style='color:#999'>Noch keine Strecken gefahren.</li>";
+                return;
+            }
+
+            if (currentView === 'history') {
+                // NEU: Wir mappen erst den echten Index und filtern dann den Verlauf
+                const filteredHistory = playedTracksData
+                    .map((item, index) => ({ item: item, originalIndex: index }))
+                    .filter(({item}) => {
+                        const matchOriginal = item.name.toLowerCase().includes(searchTerm);
+                        const matchSynonym = trackSynonyms[item.name] && trackSynonyms[item.name].toLowerCase().includes(searchTerm);
+                        return matchOriginal || matchSynonym;
+                    });
+
+                if (filteredHistory.length === 0) {
+                    list.innerHTML = "<li style='color:#999'>Keine passenden Einträge im Verlauf.</li>";
+                    return;
+                }
+
+                filteredHistory.forEach(({item, originalIndex}) => {
+                    const li = document.createElement('li');
+                    li.className = "history-li";
+
+                    let placementsHTML = '<div class="placements-container">';
+                    players.filter(p => p.visible).forEach(p => {
+                        const currentVal = (item.placements && item.placements[p.id]) ? item.placements[p.id] : "";
+                        let options = '<option value="">-</option>';
+                        for(let i=1; i<=12; i++) {
+                            options += `<option value="${i}" ${currentVal == i ? 'selected' : ''}>${i}</option>`;
+                        }
+                        placementsHTML += `
+                            <div class="player-select">
+                                <span class="player-name-label">${p.name}:</span>
+                                <select onchange="updatePlacement(${item.id}, '${p.id}', this.value)">
+                                    ${options}
+                                </select>
+                            </div>
+                        `;
+                    });
+                    placementsHTML += '</div>';
+
+                    li.innerHTML = `
+                        <div class="history-li-top">
+                            <div class="track-info">
+                                <span class="race-number">#${originalIndex + 1}</span>
+                                <img class="track-thumb" src="${getThumbUrl(item.name)}" onerror="${getFallbackImg()}">
+                                <span class="track-name">${getDisplayName(item.name)}</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <span class="track-time">${formatDateTime(item.date)}</span>
+                                <button class="btn-remove" onclick="removePlayedTrack(${item.id})">Entfernen</button>
+                            </div>
+                        </div>
+                        ${placementsHTML}
+                    `;
+                    list.appendChild(li);
+                });
+                
+                // Nur runterscrollen, wenn man nicht gerade aktiv am Suchen ist
+                if (searchTerm === "") {
+                    list.scrollTop = list.scrollHeight;
+                }
+
+            } else {
+                const totalRaces = playedTracksData.length; 
+                const stats = {};
+                
+                playedTracksData.forEach(item => {
+                    stats[item.name] = (stats[item.name] || 0) + 1;
+                });
+
+                const sortedStats = Object.entries(stats).sort((a, b) => b[1] - a[1]);
+
+                // NEU: Filtert die Statistik-Ansicht nach der Eingabe
+                const filteredStats = sortedStats.filter(([trackName, count]) => {
+                    const matchOriginal = trackName.toLowerCase().includes(searchTerm);
+                    const matchSynonym = trackSynonyms[trackName] && trackSynonyms[trackName].toLowerCase().includes(searchTerm);
+                    return matchOriginal || matchSynonym;
+                });
+
+                if (filteredStats.length === 0) {
+                    list.innerHTML = "<li style='color:#999'>Keine passenden Einträge in der Statistik.</li>";
+                    return;
+                }
+
+                filteredStats.forEach(([trackName, count]) => {
+                    const percentage = ((count / totalRaces) * 100).toFixed(1);
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <div class="track-info">
+                            <img class="track-thumb" src="${getThumbUrl(trackName)}" onerror="${getFallbackImg()}">
+                            <span class="track-count">${count}x</span>
+                            <span class="track-percent">${percentage}%</span>
+                            <span class="track-name">${getDisplayName(trackName)}</span>
+                        </div>
+                    `;
+                    list.appendChild(li);
+                });
+            }
+        }
+
+        function addPlayedTrack(trackName) {
+            const uniqueId = Date.now() + Math.floor(Math.random() * 1000);
+            const currentTime = new Date().toISOString();
+            
+            playedTracksData.push({ id: uniqueId, name: trackName, date: currentTime, placements: {} });
+            saveData();
+            
+            // Löscht die Suchleiste automatisch, wenn eine neue Strecke hinzugefügt wird, damit man sie direkt sieht
+            document.getElementById('searchInput').value = "";
+            filterTracks();
+        }
+
+        function removePlayedTrack(idToRemove) {
+            playedTracksData = playedTracksData.filter(item => item.id !== idToRemove);
+            saveData();
+            renderPlayedTracks();
+        }
+
+        function saveData() {
+            localStorage.setItem('mk8d_history_log', JSON.stringify(playedTracksData));
+        }
+
+        // NEU: Aktualisiert nun linke UND rechte Spalte gleichzeitig
+        function filterTracks() {
+            renderAllTracks(document.getElementById('searchInput').value);
+            renderPlayedTracks();
+        }
+
+        function exportJSON() {
+            if (playedTracksData.length === 0 && Object.keys(trackSynonyms).length === 0) {
+                alert("Es gibt keine Daten zum Exportieren!");
+                return;
+            }
+            
+            const exportData = {
+                history: playedTracksData,
+                synonyms: trackSynonyms,
+                players: players
+            };
+            
+            const dataStr = JSON.stringify(exportData, null, 2);
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "mk8d_tracker_backup.json";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function importJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    
+                    if (Array.isArray(importedData)) {
+                        playedTracksData = importedData;
+                    } 
+                    else if (importedData.history !== undefined) {
+                        playedTracksData = importedData.history || [];
+                        trackSynonyms = importedData.synonyms || {};
+                        localStorage.setItem('mk8d_synonyms', JSON.stringify(trackSynonyms));
+                        
+                        if (importedData.players) {
+                            players = importedData.players;
+                            savePlayers();
+                            renderPlayersManager();
+                        }
+                    }
+                    
+                    saveData();
+                    filterTracks();
+                    alert("Daten erfolgreich importiert!");
+                    
+                } catch (error) {
+                    alert("Fehler beim Lesen der JSON-Datei.");
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = "";
+        }
+
+        renderPlayersManager();
+        renderAllTracks();
+        renderPlayedTracks();
+    </script>
+</body>
+</html>
