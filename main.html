@@ -40,7 +40,7 @@
             padding: 15px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
             margin-top: 10px;
-            width: 250px;
+            width: 280px; /* Leicht vergrößert für den Durchschnittswert */
             border: 1px solid #ddd;
         }
 
@@ -56,19 +56,18 @@
         }
 
         .player-manager-list {
-            max-height: 150px;
+            max-height: 200px;
             overflow-y: auto;
             margin-bottom: 10px;
         }
 
-        /* NEU: Flex-Layout für die Spieler-Items (inklusive Löschen-Button) */
         .player-manager-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 8px;
             background: #f9f9f9;
-            padding: 4px 8px;
+            padding: 6px 8px;
             border-radius: 5px;
         }
 
@@ -82,9 +81,23 @@
             font-weight: bold;
             color: #444;
             flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        /* NEU: Styling für den Löschen-Button in der Spielerliste */
+        /* NEU: Styling für den Durchschnittswert */
+        .player-average {
+            background-color: #e0e0e0;
+            color: #333;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-right: 8px;
+            white-space: nowrap;
+        }
+
         .btn-delete-player {
             background-color: #ff4d4d;
             color: white;
@@ -348,16 +361,38 @@
             localStorage.setItem('mk8d_players', JSON.stringify(players));
         }
 
+        // NEU: Berechnet die durchschnittliche Platzierung eines Spielers
+        function getPlayerAverage(playerId) {
+            let total = 0;
+            let count = 0;
+            
+            playedTracksData.forEach(race => {
+                if (race.placements && race.placements[playerId]) {
+                    const placement = parseInt(race.placements[playerId], 10);
+                    if (!isNaN(placement)) {
+                        total += placement;
+                        count++;
+                    }
+                }
+            });
+            
+            if (count === 0) return "-";
+            return "Ø " + (total / count).toFixed(1);
+        }
+
         function renderPlayersManager() {
             const container = document.getElementById('playerListContainer');
             container.innerHTML = '';
             players.forEach(p => {
+                const avgPlacement = getPlayerAverage(p.id); // Holt den Durchschnittswert
+                
                 container.innerHTML += `
                     <div class="player-manager-item">
                         <label>
                             <input type="checkbox" ${p.visible ? 'checked' : ''} onchange="togglePlayerVisibility('${p.id}')">
                             ${p.name}
                         </label>
+                        <span class="player-average" title="Durchschnittliche Platzierung">${avgPlacement}</span>
                         <button class="btn-delete-player" onclick="deletePlayer('${p.id}')" title="Spieler löschen">✖</button>
                     </div>
                 `;
@@ -385,7 +420,6 @@
             }
         }
 
-        // NEU: Funktion zum Löschen eines Spielers
         function deletePlayer(id) {
             const player = players.find(x => x.id === id);
             if (player) {
@@ -404,6 +438,7 @@
                 if (!race.placements) race.placements = {};
                 race.placements[playerId] = value;
                 saveData();
+                renderPlayersManager(); // NEU: Aktualisiert die Durchschnittswerte live!
             }
         }
 
@@ -603,6 +638,7 @@
             playedTracksData = playedTracksData.filter(item => item.id !== idToRemove);
             saveData();
             renderPlayedTracks();
+            renderPlayersManager(); // NEU: Update Durchschnitt, falls Rennen gelöscht wird
         }
 
         function saveData() {
@@ -659,12 +695,12 @@
                         if (importedData.players) {
                             players = importedData.players;
                             savePlayers();
-                            renderPlayersManager();
                         }
                     }
                     
                     saveData();
                     filterTracks();
+                    renderPlayersManager(); // Wichtig nach Import für korrekte Durchschnittswerte
                     alert("Daten erfolgreich importiert!");
                     
                 } catch (error) {
