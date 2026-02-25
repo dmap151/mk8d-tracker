@@ -361,7 +361,6 @@
             localStorage.setItem('mk8d_players', JSON.stringify(players));
         }
 
-        // NEU: Berechnet die durchschnittliche Platzierung eines Spielers
         function getPlayerAverage(playerId) {
             let total = 0;
             let count = 0;
@@ -376,23 +375,44 @@
                 }
             });
             
-            if (count === 0) return "-";
-            return "Ø " + (total / count).toFixed(1);
+            return (total / count).toFixed(1);
+        }
+
+        function getPlayerAveragePoints(playerId){
+
+            let points = [15,12,10,9,8,7,6,5,4,3,2,1];
+            
+            let total = 0;
+            let count = 0;
+            
+            playedTracksData.forEach(race => {
+                if (race.placements && race.placements[playerId]) {
+                    const placement = parseInt(race.placements[playerId], 10);
+                    if (!isNaN(placement)) {
+                        total += points[placement - 1];
+                        count++;
+                    }
+                }
+            });
+            
+            return (total/count).toFixed(1);
         }
 
         function renderPlayersManager() {
             const container = document.getElementById('playerListContainer');
             container.innerHTML = '';
             players.forEach(p => {
-                const avgPlacement = getPlayerAverage(p.id); // Holt den Durchschnittswert
-                
+                const avgPlacement = getPlayerAverage(p.id);
+                const avgPoints4Rounds = 4*getPlayerAveragePoints(p.id);
+
                 container.innerHTML += `
                     <div class="player-manager-item">
                         <label>
                             <input type="checkbox" ${p.visible ? 'checked' : ''} onchange="togglePlayerVisibility('${p.id}')">
                             ${p.name}
                         </label>
-                        <span class="player-average" title="Durchschnittliche Platzierung">${avgPlacement}</span>
+                        <span class="player-average" title="Durchschnittliche Platzierung">${isNaN(avgPlacement)?'-' : avgPlacement}</span>
+                        <span class="player-average" title="Durchschnittliche Punkte bei 4 Runden">${isNaN(avgPoints4Rounds)?'-' : avgPoints4Rounds}</span>
                         <button class="btn-delete-player" onclick="deletePlayer('${p.id}')" title="Spieler löschen">✖</button>
                     </div>
                 `;
@@ -438,7 +458,7 @@
                 if (!race.placements) race.placements = {};
                 race.placements[playerId] = value;
                 saveData();
-                renderPlayersManager(); // NEU: Aktualisiert die Durchschnittswerte live!
+                renderPlayersManager();
             }
         }
 
@@ -638,7 +658,7 @@
             playedTracksData = playedTracksData.filter(item => item.id !== idToRemove);
             saveData();
             renderPlayedTracks();
-            renderPlayersManager(); // NEU: Update Durchschnitt, falls Rennen gelöscht wird
+            renderPlayersManager();
         }
 
         function saveData() {
