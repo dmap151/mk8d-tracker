@@ -656,9 +656,12 @@
 
         function removePlayedTrack(idToRemove) {
             playedTracksData = playedTracksData.filter(item => item.id !== idToRemove);
-            saveData();
-            renderPlayedTracks();
-            renderPlayersManager();
+            if(confirm("Möchten Sie wirklich diesen Eintrag löschen?")){
+                saveData();
+                renderPlayedTracks();
+                renderPlayersManager();
+            }
+            
         }
 
         function saveData() {
