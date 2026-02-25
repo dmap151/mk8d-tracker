@@ -355,6 +355,27 @@ table.stats-table tr:hover, table.h2h-table tr:hover {
     background-color: #f1f1f1;
 }
 
+.chart-container {
+    background: #fff;
+    padding: 15px;
+    border-radius: 10px;
+    border: 1px solid #eee;
+    margin-top: 20px;
+    margin-bottom: 30px; /* Added space below the chart */
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+}
+
+/* Specific spacing for nested stats sections */
+.stats-section .stats-section {
+    margin-top: 20px;
+    border-top: 1px solid #eee;
+    padding-top: 25px;
+    box-shadow: none; /* Remove shadow for nested section to keep it clean */
+    background: transparent; /* Make it blend in */
+    padding-left: 0;
+    padding-right: 0;
+}
+
 /* Head-to-Head Table Specifics */
 table.h2h-table th, table.h2h-table td {
     text-align: center;

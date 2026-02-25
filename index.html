@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mario Kart 8 Deluxe - Strecken Tracker</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
@@ -108,15 +109,26 @@
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="stats-section">
-                <h2>Head-to-Head (Wer schlägt wen?)</h2>
-                <p style="font-size: 0.9rem; color: #666;">Zeile gewinnt gegen Spalte</p>
-                <div style="overflow-x: auto;">
-                    <table class="h2h-table" id="h2hTable"></table>
+                <div class="chart-container" style="margin-top: 30px; height: 350px;">
+                    <div class="chart-controls" style="margin-bottom: 10px; display: flex; justify-content: flex-end;">
+                        <label style="font-size: 0.9rem; font-weight: bold; color: #666; cursor: pointer;">
+                            <input type="checkbox" id="accumulatedChartToggle" onchange="updateStatsViews()"> Kumulierte Punkte anzeigen
+                        </label>
+                    </div>
+                    <canvas id="performanceChart"></canvas>
+                </div>
+
+                <div class="stats-section">
+                    <h2>Head-to-Head (Wer schlägt wen?)</h2>
+                    <p style="font-size: 0.9rem; color: #666;">Zeile gewinnt gegen Spalte</p>
+                    <div style="overflow-x: auto;">
+                        <table class="h2h-table" id="h2hTable"></table>
+                    </div>
                 </div>
             </div>
+
+
 
         </div>
     </div>

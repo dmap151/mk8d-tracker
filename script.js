@@ -14,6 +14,7 @@ let currentView = 'history'; // 'history' or 'stats' (for the tracker column)
 let showSynonyms = false;
 let currentCalendarDate = new Date();
 let selectedCalendarDate = null; // null means no specific day filter from calendar
+let performanceChart = null;
 
 // Navigation
 function showPage(pageId) {
@@ -219,6 +220,7 @@ let dragSrcEl = null;
 function updateStatsViews() {
     renderStatistics();
     renderHeadToHead();
+    renderPerformanceChart();
 }
 
 
@@ -295,8 +297,7 @@ function handleDrop(e) {
         
         savePlayers();
         renderPlayersManager();
-        renderStatistics();
-        renderHeadToHead();
+        updateStatsViews();
         renderPlayedTracks(); // Aktualisiert auch die Reihenfolge in den Dropdowns
     }
     return false;
@@ -348,6 +349,118 @@ function renderStatistics() {
             <td><strong>${avgPointsXStr}</strong></td>
         `;
         tbody.appendChild(tr);
+    });
+}
+
+function renderPerformanceChart() {
+    const ctx = document.getElementById('performanceChart');
+    if (!ctx) return;
+
+    const races = getFilteredRaces();
+    const visiblePlayers = players.filter(p => p.visible);
+    const isAccumulated = document.getElementById('accumulatedChartToggle') ? document.getElementById('accumulatedChartToggle').checked : false;
+
+    if (races.length === 0 || visiblePlayers.length === 0) {
+        if (performanceChart) performanceChart.destroy();
+        return;
+    }
+
+    // Prepare labels (Time/Date)
+    const labels = races.map(r => formatDateTime(r.date));
+
+    // Colors for players
+    const chartColors = [
+        '#e60012', '#00b0ff', '#4CAF50', '#ff9800', '#9c27b0', 
+        '#3f51b5', '#009688', '#ffeb3b', '#795548', '#607d8b'
+    ];
+
+    const datasets = visiblePlayers.map((player, index) => {
+        let runningTotal = 0;
+        let participatedAtLeastOnce = false;
+        let hasData = false;
+
+        const data = races.map(race => {
+            const placement = (race.placements && race.placements[player.id]) ? parseInt(race.placements[player.id]) : null;
+            const points = (placement && placement >= 1 && placement <= 12) ? POINTS_SYSTEM[placement - 1] : null;
+            
+            if (points !== null) hasData = true;
+
+            if (isAccumulated) {
+                if (points !== null) {
+                    runningTotal += points;
+                    participatedAtLeastOnce = true;
+                }
+                return participatedAtLeastOnce ? runningTotal : null;
+            } else {
+                return points;
+            }
+        });
+
+        if (!hasData) return null;
+
+        return {
+            label: player.name,
+            data: data,
+            borderColor: chartColors[index % chartColors.length],
+            backgroundColor: chartColors[index % chartColors.length] + '33',
+            borderWidth: 2,
+            tension: 0.3,
+            fill: isAccumulated,
+            spanGaps: true
+        };
+    }).filter(ds => ds !== null);
+
+    if (performanceChart) {
+        performanceChart.destroy();
+    }
+
+    performanceChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: isAccumulated ? 'Punkte (Gesamt)' : 'Punkte (Pro Rennen)'
+                    },
+                    ticks: {
+                        stepSize: isAccumulated ? undefined : 1
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Zeitverlauf'
+                    },
+                    ticks: {
+                        maxRotation: 45,
+                        minRotation: 45,
+                        autoSkip: true,
+                        maxTicksLimit: 10
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                title: {
+                    display: true,
+                    text: isAccumulated ? 'Kumulierte Punkteentwicklung' : 'Punkte pro Rennen'
+                }
+            }
+        }
     });
 }
 
@@ -455,8 +568,7 @@ function addPlayer() {
         savePlayers();
         renderPlayersManager();
         renderPlayedTracks();
-        renderStatistics();
-        renderHeadToHead();
+        updateStatsViews();
     }
 }
 
@@ -468,8 +580,7 @@ function deletePlayer(id) {
             savePlayers();
             renderPlayersManager();
             renderPlayedTracks();
-            renderStatistics();
-            renderHeadToHead();
+            updateStatsViews();
         }
     }
 }
@@ -480,8 +591,7 @@ function updatePlacement(raceId, playerId, value) {
         if (!race.placements) race.placements = {};
         race.placements[playerId] = value;
         saveData();
-        renderStatistics(); // Stats updaten
-        renderHeadToHead(); // H2H updaten
+        updateStatsViews();
     }
 }
 
@@ -677,8 +787,7 @@ function addPlayedTrack(trackName) {
     
     document.getElementById('searchInput').value = "";
     filterTracks();
-    renderStatistics();
-    renderHeadToHead();
+    updateStatsViews();
     renderCalendar();
 }
 
@@ -687,8 +796,7 @@ function removePlayedTrack(idToRemove) {
     if(confirm("Möchten Sie wirklich diesen Eintrag löschen?")){
         saveData();
         renderPlayedTracks();
-        renderStatistics();
-        renderHeadToHead();
+        updateStatsViews();
         renderCalendar();
     }
 }
@@ -753,8 +861,7 @@ function importJSON(event) {
             saveData();
             filterTracks();
             renderPlayersManager();
-            renderStatistics();
-            renderHeadToHead();
+            updateStatsViews();
             renderCalendar();
             alert("Daten erfolgreich importiert!");
             
@@ -770,6 +877,5 @@ function importJSON(event) {
 renderPlayersManager();
 renderAllTracks();
 renderPlayedTracks();
-renderStatistics();
-renderHeadToHead();
+updateStatsViews();
 renderCalendar();
