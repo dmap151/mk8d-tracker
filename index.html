@@ -60,11 +60,17 @@
                 <div id="playerManagerList" class="player-manager-list-full"></div>
             </div>
 
+
+
             <div class="stats-section">
                 <h2>Leistungsübersicht</h2>
                 <div class="stats-controls">
                     <div>
                         <label>Betrachte die letzten <input type="number" id="recentRacesInput" placeholder="Alle" min="1" onchange="updateStatsViews()" style="width: 60px;"> Rennen</label>
+                    </div>
+                    <div style="margin-top: 10px; display: flex; gap: 15px; flex-wrap: wrap;">
+                        <label>Datum von: <input type="date" id="dateStartInput" onchange="updateStatsViews()"></label>
+                        <label>bis: <input type="date" id="dateEndInput" onchange="updateStatsViews()"></label>
                     </div>
                     <div style="margin-top: 10px;">
                         <label>Punkte berechnen für <input type="number" id="roundsInput" value="4" min="1" onchange="renderStatistics()"> Runden</label>
@@ -88,6 +94,25 @@
                 <p style="font-size: 0.9rem; color: #666;">Zeile gewinnt gegen Spalte</p>
                 <div style="overflow-x: auto;">
                     <table class="h2h-table" id="h2hTable"></table>
+                </div>
+            </div>
+
+            <div class="stats-section">
+                <h2>Aktivitäts-Kalender</h2>
+                <div class="calendar-header">
+                    <button onclick="changeMonth(-1)">❮</button>
+                    <span id="calendarTitle">Monat Jahr</span>
+                    <button onclick="changeMonth(1)">❯</button>
+                </div>
+                <div class="calendar-grid" id="calendarGrid"></div>
+                <div class="calendar-legend">
+                    <span>Weniger</span>
+                    <div class="legend-box heat-0"></div>
+                    <div class="legend-box heat-1"></div>
+                    <div class="legend-box heat-2"></div>
+                    <div class="legend-box heat-3"></div>
+                    <div class="legend-box heat-4"></div>
+                    <span>Mehr</span>
                 </div>
             </div>
 

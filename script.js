@@ -12,6 +12,8 @@ let players = JSON.parse(localStorage.getItem('mk8d_players')) || [
 
 let currentView = 'history'; // 'history' or 'stats' (for the tracker column)
 let showSynonyms = false;
+let currentCalendarDate = new Date();
+let selectedCalendarDate = null; // null means no specific day filter from calendar
 
 // Navigation
 function showPage(pageId) {
@@ -26,6 +28,7 @@ function showPage(pageId) {
         document.getElementById('tracker-view').classList.add('hidden');
         document.getElementById('stats-view').classList.remove('hidden');
         updateStatsViews();
+        renderCalendar();
     }
 }
 
@@ -33,19 +36,155 @@ function savePlayers() {
     localStorage.setItem('mk8d_players', JSON.stringify(players));
 }
 
+// ---- Calendar Logic ----
+
+function changeMonth(offset) {
+    currentCalendarDate.setMonth(currentCalendarDate.getMonth() + offset);
+    renderCalendar();
+}
+
+function renderCalendar() {
+    const grid = document.getElementById('calendarGrid');
+    const title = document.getElementById('calendarTitle');
+    if (!grid || !title) return;
+
+    grid.innerHTML = '';
+    
+    const year = currentCalendarDate.getFullYear();
+    const month = currentCalendarDate.getMonth();
+    
+    // Set Title
+    const monthNames = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
+    title.textContent = `${monthNames[month]} ${year}`;
+
+    // Day Headers
+    const dayNames = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+    dayNames.forEach(day => {
+        const header = document.createElement('div');
+        header.className = 'calendar-day-header';
+        header.textContent = day;
+        grid.appendChild(header);
+    });
+
+    // Calculate Days
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    
+    // Adjust for Monday start (0=Sunday, 1=Monday -> we want 0=Monday, 6=Sunday)
+    let startDayIndex = firstDay.getDay() - 1; 
+    if (startDayIndex === -1) startDayIndex = 6;
+
+    // Get Race Counts per Day
+    const raceCounts = {};
+    playedTracksData.forEach(race => {
+        const d = new Date(race.date);
+        if (d.getFullYear() === year && d.getMonth() === month) {
+            const day = d.getDate();
+            raceCounts[day] = (raceCounts[day] || 0) + 1;
+        }
+    });
+
+    // Fill Empty Slots before 1st
+    for (let i = 0; i < startDayIndex; i++) {
+        const emptyCell = document.createElement('div');
+        emptyCell.className = 'calendar-day';
+        emptyCell.style.backgroundColor = 'transparent';
+        grid.appendChild(emptyCell);
+    }
+
+    // Fill Days
+    for (let day = 1; day <= daysInMonth; day++) {
+        const cell = document.createElement('div');
+        cell.className = 'calendar-day current-month';
+        
+        const count = raceCounts[day] || 0;
+        
+        // Heatmap Logic
+        let heatClass = 'heat-0';
+        if (count > 0) heatClass = 'heat-1';
+        if (count > 4) heatClass = 'heat-2';
+        if (count > 10) heatClass = 'heat-3';
+        if (count > 20) heatClass = 'heat-4';
+        
+        if (count > 0) {
+            cell.classList.add(heatClass);
+            cell.title = `${count} Rennen am ${day}.${month + 1}.${year}`;
+        }
+
+        // Selected Date logic
+        if (selectedCalendarDate && 
+            selectedCalendarDate.getFullYear() === year && 
+            selectedCalendarDate.getMonth() === month && 
+            selectedCalendarDate.getDate() === day) {
+            cell.classList.add('selected-day');
+        }
+
+        cell.onclick = () => {
+            const clickedDate = new Date(year, month, day);
+            if (selectedCalendarDate && selectedCalendarDate.getTime() === clickedDate.getTime()) {
+                selectedCalendarDate = null; // Toggle off
+            } else {
+                selectedCalendarDate = clickedDate;
+            }
+            renderCalendar();
+            updateStatsViews();
+        };
+        
+        cell.innerHTML = `
+            <span class="day-number">${day}</span>
+            ${count > 0 ? `<span class="day-count">${count}</span>` : ''}
+        `;
+        
+        grid.appendChild(cell);
+    }
+}
+
+
 // ---- Stat Helpers ----
 
 function getFilteredRaces() {
+    let filtered = playedTracksData;
+
+    // Calendar Selection Filter (Highest priority for single day)
+    if (selectedCalendarDate) {
+        const startOfDay = new Date(selectedCalendarDate);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(selectedCalendarDate);
+        endOfDay.setHours(23, 59, 59, 999);
+        
+        filtered = filtered.filter(r => {
+            const d = new Date(r.date);
+            return d >= startOfDay && d <= endOfDay;
+        });
+    } else {
+        // Only apply normal date filters if no specific calendar day is selected
+        // Date Filter
+        const startDateStr = document.getElementById('dateStartInput').value;
+        const endDateStr = document.getElementById('dateEndInput').value;
+
+        if (startDateStr) {
+            const startDate = new Date(startDateStr);
+            startDate.setHours(0, 0, 0, 0);
+            filtered = filtered.filter(r => new Date(r.date) >= startDate);
+        }
+
+        if (endDateStr) {
+            const endDate = new Date(endDateStr);
+            endDate.setHours(23, 59, 59, 999);
+            filtered = filtered.filter(r => new Date(r.date) <= endDate);
+        }
+    }
+
+    // Limit Filter
     const limitInput = document.getElementById('recentRacesInput');
     const limit = parseInt(limitInput.value);
     
-    if (isNaN(limit) || limit <= 0) {
-        return playedTracksData;
+    if (!isNaN(limit) && limit > 0) {
+        filtered = filtered.slice(-limit);
     }
     
-    // playedTracksData is [oldest, ..., newest]
-    // We want the last 'limit' items.
-    return playedTracksData.slice(-limit);
+    return filtered;
 }
 
 function getPlayerStats(playerId, races) {
@@ -182,13 +321,15 @@ function renderStatistics() {
     const racesToConsider = getFilteredRaces();
 
     // Sortiere Spieler nach durchschnittlichen Punkten (absteigend)
-    const statsList = players.map(p => {
-        const s = getPlayerStats(p.id, racesToConsider);
-        return { 
-            player: p, 
-            stats: s 
-        };
-    }).sort((a, b) => b.stats.avgPoints - a.stats.avgPoints);
+    const statsList = players
+        .filter(p => p.visible)
+        .map(p => {
+            const s = getPlayerStats(p.id, racesToConsider);
+            return { 
+                player: p, 
+                stats: s 
+            };
+        }).sort((a, b) => b.stats.avgPoints - a.stats.avgPoints);
 
     statsList.forEach(item => {
         const p = item.player;
@@ -218,7 +359,10 @@ function renderHeadToHead() {
     const thead = document.createElement('thead');
     const headerRow = document.createElement('tr');
     headerRow.innerHTML = '<th>vs</th>'; // Corner cell
-    players.forEach(p => {
+    
+    const visiblePlayers = players.filter(p => p.visible);
+    
+    visiblePlayers.forEach(p => {
         headerRow.innerHTML += `<th>${p.name}</th>`;
     });
     thead.appendChild(headerRow);
@@ -229,9 +373,9 @@ function renderHeadToHead() {
     // Matrix calculation
     // wins[p1_id][p2_id] = number of times p1 beat p2
     const wins = {};
-    players.forEach(p1 => {
+    visiblePlayers.forEach(p1 => {
         wins[p1.id] = {};
-        players.forEach(p2 => {
+        visiblePlayers.forEach(p2 => {
             wins[p1.id][p2.id] = 0;
         });
     });
@@ -242,14 +386,14 @@ function renderHeadToHead() {
         if (!race.placements) return;
         
         // Vergleiche jeden Spieler mit jedem anderen
-        for (let i = 0; i < players.length; i++) {
-            const p1 = players[i];
+        for (let i = 0; i < visiblePlayers.length; i++) {
+            const p1 = visiblePlayers[i];
             const p1Place = parseInt(race.placements[p1.id]);
             
             if (isNaN(p1Place)) continue; // p1 nicht mitgefahren
 
-            for (let j = 0; j < players.length; j++) {
-                const p2 = players[j];
+            for (let j = 0; j < visiblePlayers.length; j++) {
+                const p2 = visiblePlayers[j];
                 if (p1.id === p2.id) continue;
 
                 const p2Place = parseInt(race.placements[p2.id]);
@@ -263,11 +407,11 @@ function renderHeadToHead() {
     });
 
     // Body Rows
-    players.forEach(p1 => {
+    visiblePlayers.forEach(p1 => {
         const tr = document.createElement('tr');
         tr.innerHTML = `<td>${p1.name}</td>`; // Row Header
 
-        players.forEach(p2 => {
+        visiblePlayers.forEach(p2 => {
             const td = document.createElement('td');
             if (p1.id === p2.id) {
                 td.className = 'h2h-cell h2h-self';
@@ -298,6 +442,7 @@ function togglePlayerVisibility(id) {
         p.visible = !p.visible;
         savePlayers();
         renderPlayedTracks(); // Updates dropdowns in history
+        updateStatsViews();    // Updates statistics and H2H
     }
 }
 
@@ -534,6 +679,7 @@ function addPlayedTrack(trackName) {
     filterTracks();
     renderStatistics();
     renderHeadToHead();
+    renderCalendar();
 }
 
 function removePlayedTrack(idToRemove) {
@@ -543,6 +689,7 @@ function removePlayedTrack(idToRemove) {
         renderPlayedTracks();
         renderStatistics();
         renderHeadToHead();
+        renderCalendar();
     }
 }
 
@@ -608,6 +755,7 @@ function importJSON(event) {
             renderPlayersManager();
             renderStatistics();
             renderHeadToHead();
+            renderCalendar();
             alert("Daten erfolgreich importiert!");
             
         } catch (error) {
@@ -624,3 +772,4 @@ renderAllTracks();
 renderPlayedTracks();
 renderStatistics();
 renderHeadToHead();
+renderCalendar();
