@@ -148,6 +148,66 @@ body::before {
     flex: 1;
 }
 
+/* Stats layout with Mini Calendar */
+.stats-layout {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+}
+
+.stats-table-wrapper {
+    flex: 1;
+    min-width: 300px;
+}
+
+.mini-calendar {
+    width: 200px;
+    padding: 10px;
+    background: #fdfdfd;
+    border: 1px solid #eee;
+    border-radius: 10px;
+}
+
+.mini-calendar .calendar-header {
+    font-size: 0.85rem;
+    margin-bottom: 8px;
+}
+
+.mini-calendar .calendar-header button {
+    width: 22px;
+    height: 22px;
+    font-size: 0.7rem;
+}
+
+.mini-calendar .calendar-grid {
+    gap: 2px;
+}
+
+.mini-calendar .calendar-day-header {
+    font-size: 0.65rem;
+    padding-bottom: 2px;
+}
+
+.mini-calendar .calendar-day {
+    font-size: 0.7rem;
+    border-radius: 2px;
+}
+
+.mini-calendar .calendar-day .day-count {
+    display: none; /* Hide count text in mini view to save space */
+}
+
+.mini-calendar .calendar-legend {
+    margin-top: 8px;
+    justify-content: center;
+}
+
+.mini-calendar .legend-box {
+    width: 8px;
+    height: 8px;
+}
+
 /* Calendar */
 .calendar-header {
     display: flex;

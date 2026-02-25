@@ -76,17 +76,38 @@
                         <label>Punkte berechnen für <input type="number" id="roundsInput" value="4" min="1" onchange="renderStatistics()"> Runden</label>
                     </div>
                 </div>
-                <table class="stats-table">
-                    <thead>
-                        <tr>
-                            <th>Spieler</th>
-                            <th>Ø Platzierung</th>
-                            <th>Ø Punkte (1 Runde)</th>
-                            <th id="th-points-x">Ø Punkte (4 Runden)</th>
-                        </tr>
-                    </thead>
-                    <tbody id="statsTableBody"></tbody>
-                </table>
+                
+                <div class="stats-layout">
+                    <div class="stats-table-wrapper">
+                        <table class="stats-table">
+                            <thead>
+                                <tr>
+                                    <th>Spieler</th>
+                                    <th>Ø Platzierung</th>
+                                    <th>Ø Punkte (1 Runde)</th>
+                                    <th id="th-points-x">Ø Punkte (4 Runden)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="statsTableBody"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="mini-calendar">
+                        <div class="calendar-header">
+                            <button onclick="changeMonth(-1)">❮</button>
+                            <span id="calendarTitle">Monat Jahr</span>
+                            <button onclick="changeMonth(1)">❯</button>
+                        </div>
+                        <div class="calendar-grid" id="calendarGrid"></div>
+                        <div class="calendar-legend">
+                            <div class="legend-box heat-0"></div>
+                            <div class="legend-box heat-1"></div>
+                            <div class="legend-box heat-2"></div>
+                            <div class="legend-box heat-3"></div>
+                            <div class="legend-box heat-4"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="stats-section">
@@ -94,25 +115,6 @@
                 <p style="font-size: 0.9rem; color: #666;">Zeile gewinnt gegen Spalte</p>
                 <div style="overflow-x: auto;">
                     <table class="h2h-table" id="h2hTable"></table>
-                </div>
-            </div>
-
-            <div class="stats-section">
-                <h2>Aktivitäts-Kalender</h2>
-                <div class="calendar-header">
-                    <button onclick="changeMonth(-1)">❮</button>
-                    <span id="calendarTitle">Monat Jahr</span>
-                    <button onclick="changeMonth(1)">❯</button>
-                </div>
-                <div class="calendar-grid" id="calendarGrid"></div>
-                <div class="calendar-legend">
-                    <span>Weniger</span>
-                    <div class="legend-box heat-0"></div>
-                    <div class="legend-box heat-1"></div>
-                    <div class="legend-box heat-2"></div>
-                    <div class="legend-box heat-3"></div>
-                    <div class="legend-box heat-4"></div>
-                    <span>Mehr</span>
                 </div>
             </div>
 
