@@ -63,7 +63,12 @@
             <div class="stats-section">
                 <h2>Leistungsübersicht</h2>
                 <div class="stats-controls">
-                    <label>Punkte berechnen für <input type="number" id="roundsInput" value="4" min="1" onchange="renderStatistics()"> Runden</label>
+                    <div>
+                        <label>Betrachte die letzten <input type="number" id="recentRacesInput" placeholder="Alle" min="1" onchange="updateStatsViews()" style="width: 60px;"> Rennen</label>
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <label>Punkte berechnen für <input type="number" id="roundsInput" value="4" min="1" onchange="renderStatistics()"> Runden</label>
+                    </div>
                 </div>
                 <table class="stats-table">
                     <thead>

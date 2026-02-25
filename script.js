@@ -25,8 +25,7 @@ function showPage(pageId) {
         document.getElementById('btn-nav-stats').classList.add('active');
         document.getElementById('tracker-view').classList.add('hidden');
         document.getElementById('stats-view').classList.remove('hidden');
-        renderStatistics();
-        renderHeadToHead();
+        updateStatsViews();
     }
 }
 
@@ -36,12 +35,27 @@ function savePlayers() {
 
 // ---- Stat Helpers ----
 
-function getPlayerStats(playerId) {
+function getFilteredRaces() {
+    const limitInput = document.getElementById('recentRacesInput');
+    const limit = parseInt(limitInput.value);
+    
+    if (isNaN(limit) || limit <= 0) {
+        return playedTracksData;
+    }
+    
+    // playedTracksData is [oldest, ..., newest]
+    // We want the last 'limit' items.
+    return playedTracksData.slice(-limit);
+}
+
+function getPlayerStats(playerId, races) {
     let placementSum = 0;
     let pointsSum = 0;
     let raceCount = 0;
+    
+    const dataToUse = races || playedTracksData;
 
-    playedTracksData.forEach(race => {
+    dataToUse.forEach(race => {
         if (race.placements && race.placements[playerId]) {
             const placement = parseInt(race.placements[playerId], 10);
             if (!isNaN(placement) && placement >= 1 && placement <= 12) {
@@ -61,21 +75,100 @@ function getPlayerStats(playerId) {
 
 // ---- Views & Rendering ----
 
+let dragSrcEl = null;
+
+function updateStatsViews() {
+    renderStatistics();
+    renderHeadToHead();
+}
+
+
 function renderPlayersManager() {
     const container = document.getElementById('playerManagerList');
-    if (!container) return; // Falls Element nicht existiert (sollte nicht passieren)
+    if (!container) return;
     
     container.innerHTML = '';
-    players.forEach(p => {
-        container.innerHTML += `
-            <div class="player-manager-item">
-                <label>
-                    <input type="checkbox" ${p.visible ? 'checked' : ''} onchange="togglePlayerVisibility('${p.id}')">
-                    ${p.name}
-                </label>
-                <button class="btn-delete-player" onclick="deletePlayer('${p.id}')" title="Spieler löschen">🗑️ Löschen</button>
-            </div>
+    players.forEach((p, index) => {
+        const div = document.createElement('div');
+        div.className = 'player-manager-item';
+        div.draggable = true;
+        div.dataset.index = index;
+        div.dataset.id = p.id;
+        
+        div.innerHTML = `
+            <div class="drag-handle" title="Zum Verschieben ziehen">☰</div>
+            <label>
+                <input type="checkbox" ${p.visible ? 'checked' : ''} onchange="togglePlayerVisibility('${p.id}')">
+                ${p.name}
+            </label>
+            <button class="btn-delete-player" onclick="deletePlayer('${p.id}')" title="Spieler löschen">🗑️ Löschen</button>
         `;
+
+        addDragEvents(div);
+        container.appendChild(div);
+    });
+}
+
+function addDragEvents(item) {
+    item.addEventListener('dragstart', handleDragStart);
+    item.addEventListener('dragenter', handleDragEnter);
+    item.addEventListener('dragover', handleDragOver);
+    item.addEventListener('dragleave', handleDragLeave);
+    item.addEventListener('drop', handleDrop);
+    item.addEventListener('dragend', handleDragEnd);
+}
+
+function handleDragStart(e) {
+    this.classList.add('dragging');
+    dragSrcEl = this;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', this.innerHTML);
+}
+
+function handleDragOver(e) {
+    if (e.preventDefault) {
+        e.preventDefault();
+    }
+    e.dataTransfer.dropEffect = 'move';
+    return false;
+}
+
+function handleDragEnter(e) {
+    this.classList.add('over');
+}
+
+function handleDragLeave(e) {
+    this.classList.remove('over');
+}
+
+function handleDrop(e) {
+    if (e.stopPropagation) {
+        e.stopPropagation();
+    }
+
+    if (dragSrcEl !== this) {
+        const fromIndex = parseInt(dragSrcEl.dataset.index);
+        const toIndex = parseInt(this.dataset.index);
+        
+        // Array umsortieren
+        const movedItem = players.splice(fromIndex, 1)[0];
+        players.splice(toIndex, 0, movedItem);
+        
+        savePlayers();
+        renderPlayersManager();
+        renderStatistics();
+        renderHeadToHead();
+        renderPlayedTracks(); // Aktualisiert auch die Reihenfolge in den Dropdowns
+    }
+    return false;
+}
+
+function handleDragEnd(e) {
+    this.classList.remove('dragging');
+    
+    let items = document.querySelectorAll('.player-manager-item');
+    items.forEach(function (item) {
+        item.classList.remove('over');
     });
 }
 
@@ -86,9 +179,11 @@ function renderStatistics() {
     
     tbody.innerHTML = '';
 
+    const racesToConsider = getFilteredRaces();
+
     // Sortiere Spieler nach durchschnittlichen Punkten (absteigend)
     const statsList = players.map(p => {
-        const s = getPlayerStats(p.id);
+        const s = getPlayerStats(p.id, racesToConsider);
         return { 
             player: p, 
             stats: s 
@@ -141,7 +236,9 @@ function renderHeadToHead() {
         });
     });
 
-    playedTracksData.forEach(race => {
+    const racesToConsider = getFilteredRaces();
+
+    racesToConsider.forEach(race => {
         if (!race.placements) return;
         
         // Vergleiche jeden Spieler mit jedem anderen
@@ -409,11 +506,12 @@ function renderPlayedTracks() {
             return;
         }
 
-        filteredStats.forEach(([trackName, count]) => {
+        filteredStats.forEach(([trackName, count], index) => {
             const percentage = ((count / totalRaces) * 100).toFixed(1);
             const li = document.createElement('li');
             li.innerHTML = `
                 <div class="track-info">
+                    <span class="race-number">#${index + 1}</span>
                     <img class="track-thumb" src="${getThumbUrl(trackName)}" onerror="${getFallbackImg()}">
                     <span class="track-count">${count}x</span>
                     <span class="track-percent">${percentage}%</span>
