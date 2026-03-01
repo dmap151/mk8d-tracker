@@ -574,3 +574,16 @@ button:hover { opacity: 0.8; }
 
 .btn-edit-name { background: none; border: none; color: #888; cursor: pointer; font-size: 1.1rem; padding: 0 5px; transition: transform 0.2s; }
 .btn-edit-name:hover { transform: scale(1.2); color: var(--primary); background: none; opacity: 1; }
+
+/* Driven Track Marker */
+.driven {
+    background-color: #e8f5e9;
+    border-left: 5px solid #4CAF50;
+}
+
+.driven .track-name::after {
+    content: " ✓";
+    color: #4CAF50;
+    font-weight: bold;
+    margin-left: 5px;
+}

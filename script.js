@@ -645,6 +645,10 @@ function renderAllTracks(filter = "") {
     list.innerHTML = "";
     const searchTerm = filter.toLowerCase();
 
+    // Calculate driven tracks status
+    const drivenTracks = new Set(playedTracksData.map(t => t.name));
+    const allAreDriven = allTracks.every(t => drivenTracks.has(t));
+
     const filteredTracks = allTracks.filter(track => {
         const matchOriginal = track.toLowerCase().includes(searchTerm);
         const matchSynonym = trackSynonyms[track] && trackSynonyms[track].toLowerCase().includes(searchTerm);
@@ -653,6 +657,12 @@ function renderAllTracks(filter = "") {
 
     filteredTracks.forEach(track => {
         const li = document.createElement('li');
+        
+        // Apply driven class if track is driven AND not all tracks are driven yet
+        if (drivenTracks.has(track) && !allAreDriven) {
+            li.classList.add('driven');
+        }
+
         li.innerHTML = `
             <div class="track-info">
                 <img class="track-thumb" src="${getThumbUrl(track)}" onerror="${getFallbackImg()}">
@@ -792,10 +802,10 @@ function addPlayedTrack(trackName) {
 }
 
 function removePlayedTrack(idToRemove) {
-    playedTracksData = playedTracksData.filter(item => item.id !== idToRemove);
-    if(confirm("Möchten Sie wirklich diesen Eintrag löschen?")){
+    if(confirm("Möchten Sie wirklich diesen Eintrag löschen?")){
+        playedTracksData = playedTracksData.filter(item => item.id !== idToRemove);
         saveData();
-        renderPlayedTracks();
+        filterTracks(); // Refresh all lists and markings
         updateStatsViews();
         renderCalendar();
     }
