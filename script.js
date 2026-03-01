@@ -649,6 +649,12 @@ function renderAllTracks(filter = "") {
     const drivenTracks = new Set(playedTracksData.map(t => t.name));
     const allAreDriven = allTracks.every(t => drivenTracks.has(t));
 
+    // Update Counter
+    const counterEl = document.getElementById('trackCounter');
+    if (counterEl) {
+        counterEl.textContent = `(${drivenTracks.size}/${allTracks.length})`;
+    }
+
     const filteredTracks = allTracks.filter(track => {
         const matchOriginal = track.toLowerCase().includes(searchTerm);
         const matchSynonym = trackSynonyms[track] && trackSynonyms[track].toLowerCase().includes(searchTerm);
