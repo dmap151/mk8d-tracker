@@ -344,6 +344,7 @@ function renderStatistics() {
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>${p.name}</td>
+            <td>${s.count}</td>
             <td>${avgPlacementStr}</td>
             <td>${avgPointsStr}</td>
             <td><strong>${avgPointsXStr}</strong></td>
