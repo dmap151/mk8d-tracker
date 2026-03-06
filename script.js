@@ -6,6 +6,7 @@ const POINTS_SYSTEM = [15, 12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
 
 let playedTracksData = JSON.parse(localStorage.getItem('mk8d_history_log')) || [];
 let trackSynonyms = JSON.parse(localStorage.getItem('mk8d_synonyms')) || {}; 
+let trackRatings = JSON.parse(localStorage.getItem('mk8d_ratings')) || {};
 let players = JSON.parse(localStorage.getItem('mk8d_players')) || [
     { id: 'p1', name: 'Spieler 1', visible: true }
 ];
@@ -641,6 +642,49 @@ function editSynonym(trackName) {
     }
 }
 
+function saveRatings() {
+    localStorage.setItem('mk8d_ratings', JSON.stringify(trackRatings));
+}
+
+function rateTrack(trackName, starIndex, event) {
+    // Check if clicked on left half (0.5) or right half (1.0) of the star
+    const rect = event.target.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const width = rect.width;
+    const isHalf = x < width / 2;
+    
+    const rating = isHalf ? starIndex - 0.5 : starIndex;
+
+    // Toggle off if same rating is clicked
+    if (trackRatings[trackName] === rating) {
+        delete trackRatings[trackName];
+    } else {
+        trackRatings[trackName] = rating;
+    }
+    saveRatings();
+    filterTracks();
+}
+
+function getStarRatingHTML(trackName) {
+    const rating = trackRatings[trackName] || 0;
+    let html = '<div class="star-rating">';
+    for (let i = 1; i <= 5; i++) {
+        let starClass = 'star';
+        if (rating >= i) {
+            starClass += ' filled';
+        } else if (rating >= i - 0.5) {
+            starClass += ' half-filled';
+        }
+        
+        // Escape quotes for onclick
+        const safeName = trackName.replace(/'/g, "\\'");
+        // Pass event to handle half-star detection
+        html += `<span class="${starClass}" onclick="rateTrack('${safeName}', ${i}, event)">★</span>`;
+    }
+    html += '</div>';
+    return html;
+}
+
 function renderAllTracks(filter = "") {
     const list = document.getElementById('allTracksList');
     list.innerHTML = "";
@@ -662,6 +706,32 @@ function renderAllTracks(filter = "") {
         return matchOriginal || matchSynonym;
     });
 
+    // Sorting
+    const sortMode = document.getElementById('sortTracksInput') ? document.getElementById('sortTracksInput').value : 'default';
+
+    if (sortMode !== 'default') {
+        filteredTracks.sort((a, b) => {
+            if (sortMode === 'rating_desc') {
+                const rA = trackRatings[a] || 0;
+                const rB = trackRatings[b] || 0;
+                if (rA !== rB) return rB - rA;
+                return 0;
+            }
+            if (sortMode === 'rating_asc') {
+                const rA = trackRatings[a] || 0;
+                const rB = trackRatings[b] || 0;
+                if (rA !== rB) return rA - rB;
+                return 0;
+            }
+            if (sortMode === 'name_asc') {
+                 const nameA = getDisplayName(a).toLowerCase();
+                 const nameB = getDisplayName(b).toLowerCase();
+                 return nameA.localeCompare(nameB);
+            }
+            return 0;
+        });
+    }
+
     filteredTracks.forEach(track => {
         const li = document.createElement('li');
         
@@ -674,6 +744,7 @@ function renderAllTracks(filter = "") {
             <div class="track-info">
                 <img class="track-thumb" src="${getThumbUrl(track)}" onerror="${getFallbackImg()}">
                 <span class="track-name">${getDisplayName(track)}</span>
+                ${getStarRatingHTML(track)}
                 <button class="btn-edit-name" onclick="editSynonym('${track.replace(/'/g, "\\'")}')" title="Synonym bearbeiten">✏️</button>
             </div>
             <button onclick="addPlayedTrack('${track.replace(/'/g, "\\'")}')">+</button>
@@ -836,6 +907,7 @@ function exportJSON() {
     const exportData = {
         history: playedTracksData,
         synonyms: trackSynonyms,
+        ratings: trackRatings,
         players: players
     };
     
@@ -867,7 +939,9 @@ function importJSON(event) {
             else if (importedData.history !== undefined) {
                 playedTracksData = importedData.history || [];
                 trackSynonyms = importedData.synonyms || {};
+                trackRatings = importedData.ratings || {};
                 localStorage.setItem('mk8d_synonyms', JSON.stringify(trackSynonyms));
+                saveRatings();
                 
                 if (importedData.players) {
                     players = importedData.players;

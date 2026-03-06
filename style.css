@@ -437,6 +437,20 @@ h1 {
     flex-wrap: wrap;
 }
 
+.sort-select {
+    padding: 6px 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    font-size: 0.9rem;
+    outline: none;
+    cursor: pointer;
+    background-color: white;
+}
+
+.sort-select:focus {
+    border-color: var(--primary);
+}
+
 input[type="text"].search-input {
     padding: 12px 20px;
     width: 100%;
@@ -586,4 +600,44 @@ button:hover { opacity: 0.8; }
     color: #4CAF50;
     font-weight: bold;
     margin-left: 5px;
+}
+
+/* Star Rating */
+.star-rating {
+    display: inline-flex;
+    margin-right: 10px;
+}
+
+.star {
+    cursor: pointer;
+    color: #e0e0e0;
+    font-size: 1.2rem;
+    line-height: 1;
+    transition: transform 0.1s;
+    user-select: none;
+    position: relative;
+    display: inline-block;
+}
+
+.star.filled {
+    color: #ffca28; /* Gold */
+}
+
+.star.half-filled {
+    color: #e0e0e0; /* Base is gray */
+}
+
+.star.half-filled::after {
+    content: '★';
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 50%;
+    overflow: hidden;
+    color: #ffca28;
+    pointer-events: none; /* Let clicks pass through to the main span */
+}
+
+.star:hover {
+    transform: scale(1.2);
 }

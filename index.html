@@ -28,6 +28,12 @@
             <div class="column">
                 <div class="header-container">
                     <h2>Alle Strecken <span id="trackCounter" style="font-size: 0.9rem; color: #666; font-weight: normal;">(0/0)</span></h2>
+                    <select id="sortTracksInput" class="sort-select" onchange="filterTracks()">
+                        <option value="default">Standard</option>
+                        <option value="rating_desc">Bewertung (Hoch -> Tief)</option>
+                        <option value="rating_asc">Bewertung (Tief -> Hoch)</option>
+                        <option value="name_asc">Name (A-Z)</option>
+                    </select>
                 </div>
                 <ul id="allTracksList"></ul>
             </div>
